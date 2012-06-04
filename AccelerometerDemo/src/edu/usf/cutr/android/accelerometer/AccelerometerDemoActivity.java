@@ -19,6 +19,7 @@ package edu.usf.cutr.android.accelerometer;
 import android.app.Activity;
 import android.content.Context;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -160,7 +161,7 @@ public class AccelerometerDemoActivity extends Activity {
         }
 
         public void onSensorChanged(SensorEvent event) {
-            //Log.d(TAG, "sensor: " + sensor + ", x: " + values[0] + ", y: " + values[1] + ", z: " + values[2]);
+            Log.d("AccelerometerDemo", "sensor: " + event.sensor.getName() + ", x: " + event.values[0] + ", y: " + event.values[1] + ", z: " + event.values[2]);
             synchronized (this) {
                 if (mBitmap != null) {
                     final Canvas canvas = mCanvas;
