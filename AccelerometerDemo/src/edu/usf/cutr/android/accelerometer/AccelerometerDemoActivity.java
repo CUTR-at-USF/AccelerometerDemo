@@ -16,9 +16,19 @@
 
 package edu.usf.cutr.android.accelerometer;
 
+import java.util.Timer;
+import java.util.TimerTask;
+
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.os.BatteryManager;
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
 import android.view.View;
 import android.hardware.Sensor;
@@ -38,8 +48,19 @@ import android.graphics.RectF;
 
  */
 public class AccelerometerDemoActivity extends Activity {
+	
     private SensorManager mSensorManager;
     private GraphView mGraphView;
+   
+    
+    static boolean isAccelActive = false;
+    /** The timer posts a runnable to the main thread via this handler. */
+    private final Handler handler = new Handler();
+    /**
+     * This timer invokes periodically the checkLocationListener timer task.
+     */
+    private final Timer checkAccelListenerTimer = new Timer();
+   
 
     private class GraphView extends View implements SensorEventListener
     {
@@ -161,11 +182,17 @@ public class AccelerometerDemoActivity extends Activity {
         }
 
         public void onSensorChanged(SensorEvent event) {
+        	
             Log.d("AccelerometerDemo", "sensor: " + event.sensor.getName() + ", x: " + event.values[0] + ", y: " + event.values[1] + ", z: " + event.values[2]);
+            
+            	
             synchronized (this) {
+            	
                 if (mBitmap != null) {
+                	
                     final Canvas canvas = mCanvas;
                     final Paint paint = mPaint;
+                    
                     if (event.sensor.getType() == Sensor.TYPE_ORIENTATION) {
                         for (int i=0 ; i<3 ; i++) {
                             mOrientationValues[i] = event.values[i];
@@ -175,13 +202,16 @@ public class AccelerometerDemoActivity extends Activity {
                         float newX = mLastX + deltaX;
 
                         int j = (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD) ? 1 : 0;
+                        
                         for (int i=0 ; i<3 ; i++) {
                             int k = i+j*3;
+                            
                             final float v = mYOffset + event.values[i] * mScale[j];
                             paint.setColor(mColors[k]);
                             canvas.drawLine(mLastX, mLastValues[k], newX, v, paint);
                             mLastValues[k] = v;
                         }
+                        
                         if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD)
                             mLastX += mSpeed;
                     }
@@ -207,25 +237,118 @@ public class AccelerometerDemoActivity extends Activity {
         mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
         mGraphView = new GraphView(this);
         setContentView(mGraphView);
+        
+        /*
+         * After 5 seconds, check every 5 seconds that accelerometer sensor is still
+         * registered and spit out additional debugging info to the logs:
+         */
+        checkAccelListenerTimer.schedule(checkAccelerometerListener, 5000, 5000);
+        
     }
-
     @Override
     protected void onResume() {
         super.onResume();
-        mSensorManager.registerListener(mGraphView,
-                mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
-                SensorManager.SENSOR_DELAY_FASTEST);
-        mSensorManager.registerListener(mGraphView,
-                mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD),
-                SensorManager.SENSOR_DELAY_FASTEST);
-        mSensorManager.registerListener(mGraphView, 
-                mSensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION),
-                SensorManager.SENSOR_DELAY_FASTEST);
+        
+  
+        //Starts the sensor reading
+       
+        
     }
     
     @Override
     protected void onStop() {
-        mSensorManager.unregisterListener(mGraphView);
+    	//turns off sensor
+       
         super.onStop();
     }
+
+    /**
+     * Task invoked by a timer periodically to make sure the location listener is
+     * still registered.
+     */
+    private TimerTask checkAccelerometerListener = new TimerTask() {
+      @Override
+      public void run() {
+        // It's always safe to assume that if isRecording() is true, it implies
+        // that onCreate() has finished.
+    	  
+    	 
+    	  
+    	  handler.post(new Runnable() {
+            	  
+            public void run() {
+            	
+            	battery();
+            	//back on system thread
+            	 if (isAccelActive == true) {
+            		 
+            		 Log.d("Status", "Accelerometer is active");
+            		 mSensorManager.unregisterListener(mGraphView);
+            		 isAccelActive=false;
+            		 
+            	 }
+            	 if (isAccelActive == false) {
+            		 
+            		 
+            		 mSensorManager.registerListener(mGraphView,
+            	                mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
+            	                SensorManager.SENSOR_DELAY_FASTEST);
+            	        mSensorManager.registerListener(mGraphView,
+            	                mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD),
+            	                SensorManager.SENSOR_DELAY_FASTEST);
+            	        mSensorManager.registerListener(mGraphView, 
+            	                mSensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION),
+            	                SensorManager.SENSOR_DELAY_FASTEST);
+            	        
+            	        isAccelActive=true;
+            	 }
+            }
+              
+            }
+          );
+      }
+    };
+
+   protected void alertbox(String title, String mymessage)  
+    {  
+    new AlertDialog.Builder(this)  
+       .setMessage(mymessage)  
+      .setTitle(title)  
+       .setCancelable(true)  
+       .setNeutralButton(android.R.string.cancel,  
+          new DialogInterface.OnClickListener() {  
+          public void onClick(DialogInterface dialog, int whichButton){}  
+          })  
+       .show(); 
+    }
+    
+    protected void onDestroy()
+    {
+    	checkAccelerometerListener.cancel();
+    	checkAccelerometerListener = null;
+    	checkAccelListenerTimer.cancel();
+    	checkAccelListenerTimer.purge();
+    }
+    
+    protected void battery(){
+    	
+    BroadcastReceiver batteryReceiver = new BroadcastReceiver() {
+        int scale = -1;
+        int level = -1;
+        int voltage = -1;
+        int temp = -1;
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
+            scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
+            temp = intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, -1);
+            voltage = intent.getIntExtra(BatteryManager.EXTRA_VOLTAGE, -1);
+            Log.e("BatteryManager", "level is "+level+"/"+scale+", temp is "+temp+", voltage is "+voltage);
+        }
+    };
+    IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+    registerReceiver(batteryReceiver, filter);
 }
+}
+    
+    
