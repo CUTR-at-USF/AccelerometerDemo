@@ -16,6 +16,12 @@
 
 package edu.usf.cutr.android.accelerometer;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -28,6 +34,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.BatteryManager;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.util.Log;
 import android.view.View;
@@ -41,9 +48,13 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.RectF;
+import au.com.bytecode.opencsv.CSVWriter;
 
 /**
- * <h3>Application that displays the values of the acceleration sensor graphically.</h3>
+ * <h3>Application that displays the values of the acceleration sensor graphically.
+ * 	 Every 5 seconds.
+ * 	 Battery data
+ * </h3>
 
 
  */
@@ -51,7 +62,11 @@ public class AccelerometerDemoActivity extends Activity {
 	
     private SensorManager mSensorManager;
     private GraphView mGraphView;
-   
+    //battery variables
+    int scale = -1;
+    int level = -1;
+    int voltage = -1;
+    int temp = -1;
     
     static boolean isAccelActive = false;
     /** The timer posts a runnable to the main thread via this handler. */
@@ -61,7 +76,8 @@ public class AccelerometerDemoActivity extends Activity {
      */
     private final Timer checkAccelListenerTimer = new Timer();
    
-
+    //FileOutputStream writer = new FileOutputStream(null);
+    
     private class GraphView extends View implements SensorEventListener
     {
         private Bitmap  mBitmap;
@@ -80,6 +96,7 @@ public class AccelerometerDemoActivity extends Activity {
         private float   mWidth;
         private float   mHeight;
         
+      //-----------------------------------------------------------------------------------------------------GRAPHVIEW CONTRUCTOR-----------------
         public GraphView(Context context) {
             super(context);
             mColors[0] = Color.argb(192, 255, 64, 64);
@@ -93,7 +110,7 @@ public class AccelerometerDemoActivity extends Activity {
             mRect.set(-0.5f, -0.5f, 0.5f, 0.5f);
             mPath.arcTo(mRect, 0, 180);
         }
-        
+      //-----------------------------------------------------------------------------------------------------onSIZECHANGED-----------------
         @Override
         protected void onSizeChanged(int w, int h, int oldw, int oldh) {
             mBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.RGB_565);
@@ -112,7 +129,7 @@ public class AccelerometerDemoActivity extends Activity {
             mLastX = mMaxX;
             super.onSizeChanged(w, h, oldw, oldh);
         }
-
+      //-----------------------------------------------------------------------------------------------------onDRAW-----------------
         @Override
         protected void onDraw(Canvas canvas) {
             synchronized (this) {
@@ -180,7 +197,7 @@ public class AccelerometerDemoActivity extends Activity {
                 }
             }
         }
-
+      //-----------------------------------------------------------------------------------------------------onSENSORCHANGE-----------------
         public void onSensorChanged(SensorEvent event) {
         	
             Log.d("AccelerometerDemo", "sensor: " + event.sensor.getName() + ", x: " + event.values[0] + ", y: " + event.values[1] + ", z: " + event.values[2]);
@@ -223,7 +240,7 @@ public class AccelerometerDemoActivity extends Activity {
         public void onAccuracyChanged(Sensor sensor, int accuracy) {
         }
     }
-    
+  //-----------------------------------------------------------------------------------------------------onCREATE-----------------
     /**
      * Initialization of the Activity after it is first created.  Must at least
      * call {@link android.app.Activity#setContentView setContentView()} to
@@ -244,7 +261,140 @@ public class AccelerometerDemoActivity extends Activity {
          */
         checkAccelListenerTimer.schedule(checkAccelerometerListener, 5000, 5000);
         
+      
+       
+        
+        
+        
+        alertbox("to Terminate", "terminate?");
+        
+        
     }
+    
+    //----------------------------------------------------------------------------------------------------------------------CSVFile---------------
+
+    
+
+  //-----------------------------------------------------------------------------------------------------TIMERTASK-----------------
+    /**
+     * Task invoked by a timer periodically to make sure the location listener is
+     * still registered.
+     */
+    private TimerTask checkAccelerometerListener = new TimerTask() {
+      @Override
+      public void run() {
+        // It's always safe to assume that if isRecording() is true, it implies
+        // that onCreate() has finished.
+
+    	  handler.post(new Runnable() {
+            	  
+            public void run() {
+            	
+            	battery();
+            	
+            	
+            	//back on system thread
+            	 if (isAccelActive == true) {
+            		 
+            		 Log.d("Status", "Accelerometer is active");
+            		 mSensorManager.unregisterListener(mGraphView);
+            		 isAccelActive=false;
+            		 
+            	 }//end of if
+            	 if (isAccelActive == false) {
+            		 
+            		 
+            		 mSensorManager.registerListener(mGraphView,
+            	                mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
+            	                SensorManager.SENSOR_DELAY_FASTEST);
+            	        mSensorManager.registerListener(mGraphView,
+            	                mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD),
+            	                SensorManager.SENSOR_DELAY_FASTEST);
+            	        mSensorManager.registerListener(mGraphView, 
+            	                mSensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION),
+            	                SensorManager.SENSOR_DELAY_FASTEST);
+            	        
+            	        isAccelActive=true;
+            	 }//end if
+            }//end of internal run
+              		
+            
+            }//end of handler runnable
+          );//close of handler runnable
+    	  /**File writing**/
+      	try {
+			    File root = Environment.getExternalStorageDirectory();
+			    if (root.canWrite()){
+			        File gpxfile = new File(root, "file.txt");
+			        FileWriter gpxwriter = new FileWriter(gpxfile);
+			        BufferedWriter out = new BufferedWriter(gpxwriter);
+			        out.write("Hello world");
+			        out.close();
+			        Log.d("File", "Writting");
+			    }
+			} catch (IOException e) {
+			    Log.e("Error Error Error","Could not write file ");
+			}//end of file writing
+      	
+      }//end of run
+    };//end of timertask
+
+  //-----------------------------------------------------------------------------------------------------ALERTBOX-----------------
+   protected void alertbox(String title, String mymessage)  
+    {  
+    new AlertDialog.Builder(this)  
+       .setMessage(mymessage)  
+      .setTitle(title)
+       .setCancelable(true)  
+       .setNeutralButton(android.R.string.cancel,  
+          new DialogInterface.OnClickListener() {  
+          public void onClick(DialogInterface dialog, int whichButton){
+        	  onDestroy();
+          }  
+          })  
+       .show(); 
+    }
+    
+   //-----------------------------------------------------------------------------------------------------onDESTROY-----------------
+    protected void onDestroy()
+    {
+    	checkAccelerometerListener.cancel();
+    	checkAccelerometerListener = null;
+    	checkAccelListenerTimer.cancel();
+    	checkAccelListenerTimer.purge();
+    	
+    	finish();
+    }
+    
+    //-----------------------------------------------------------------------------------------------------BATTERY-----------------
+    
+    protected void battery(){
+    	
+    BroadcastReceiver batteryReceiver = new BroadcastReceiver() {
+       
+      
+        @Override
+        public void onReceive(Context context, Intent intent) {
+        	
+            level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);//BATTERY CHARGE
+            scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1);//SCALE OF BATTERY CHARGE
+            temp = intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, -1);//BATTERY TEMPERATURE
+            voltage = intent.getIntExtra(BatteryManager.EXTRA_VOLTAGE, -1);//BATTERY VOLTAGE
+            Log.e("BatteryManager", "level is "+level+"/"+scale+", temp is "+temp+", voltage is "+voltage);         
+           
+        }
+
+		
+        
+        
+    };
+    IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+    registerReceiver(batteryReceiver, filter);
+    
+}
+    
+  //----------------------------------------------------------------------------------------------------------------------------  
+    /**Unused methods**/
     @Override
     protected void onResume() {
         super.onResume();
@@ -261,94 +411,6 @@ public class AccelerometerDemoActivity extends Activity {
        
         super.onStop();
     }
-
-    /**
-     * Task invoked by a timer periodically to make sure the location listener is
-     * still registered.
-     */
-    private TimerTask checkAccelerometerListener = new TimerTask() {
-      @Override
-      public void run() {
-        // It's always safe to assume that if isRecording() is true, it implies
-        // that onCreate() has finished.
-    	  
-    	 
-    	  
-    	  handler.post(new Runnable() {
-            	  
-            public void run() {
-            	
-            	battery();
-            	//back on system thread
-            	 if (isAccelActive == true) {
-            		 
-            		 Log.d("Status", "Accelerometer is active");
-            		 mSensorManager.unregisterListener(mGraphView);
-            		 isAccelActive=false;
-            		 
-            	 }
-            	 if (isAccelActive == false) {
-            		 
-            		 
-            		 mSensorManager.registerListener(mGraphView,
-            	                mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
-            	                SensorManager.SENSOR_DELAY_FASTEST);
-            	        mSensorManager.registerListener(mGraphView,
-            	                mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD),
-            	                SensorManager.SENSOR_DELAY_FASTEST);
-            	        mSensorManager.registerListener(mGraphView, 
-            	                mSensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION),
-            	                SensorManager.SENSOR_DELAY_FASTEST);
-            	        
-            	        isAccelActive=true;
-            	 }
-            }
-              
-            }
-          );
-      }
-    };
-
-   protected void alertbox(String title, String mymessage)  
-    {  
-    new AlertDialog.Builder(this)  
-       .setMessage(mymessage)  
-      .setTitle(title)  
-       .setCancelable(true)  
-       .setNeutralButton(android.R.string.cancel,  
-          new DialogInterface.OnClickListener() {  
-          public void onClick(DialogInterface dialog, int whichButton){}  
-          })  
-       .show(); 
-    }
-    
-    protected void onDestroy()
-    {
-    	checkAccelerometerListener.cancel();
-    	checkAccelerometerListener = null;
-    	checkAccelListenerTimer.cancel();
-    	checkAccelListenerTimer.purge();
-    }
-    
-    protected void battery(){
-    	
-    BroadcastReceiver batteryReceiver = new BroadcastReceiver() {
-        int scale = -1;
-        int level = -1;
-        int voltage = -1;
-        int temp = -1;
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
-            scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
-            temp = intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, -1);
-            voltage = intent.getIntExtra(BatteryManager.EXTRA_VOLTAGE, -1);
-            Log.e("BatteryManager", "level is "+level+"/"+scale+", temp is "+temp+", voltage is "+voltage);
-        }
-    };
-    IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
-    registerReceiver(batteryReceiver, filter);
-}
 }
     
     
