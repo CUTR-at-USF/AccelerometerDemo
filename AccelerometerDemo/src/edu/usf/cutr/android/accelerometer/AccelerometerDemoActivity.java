@@ -18,10 +18,8 @@ package edu.usf.cutr.android.accelerometer;
 
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -32,23 +30,22 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.os.BatteryManager;
-import android.os.Bundle;
-import android.os.Environment;
-import android.os.Handler;
-import android.util.Log;
-import android.view.View;
-import android.hardware.Sensor;
-import android.hardware.SensorEvent;
-import android.hardware.SensorEventListener;
-import android.hardware.SensorManager;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.RectF;
-import au.com.bytecode.opencsv.CSVWriter;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
+import android.os.BatteryManager;
+import android.os.Bundle;
+import android.os.Environment;
+import android.os.Handler;
+import android.util.Log;
+import android.view.View;
 
 /**
  * <h3>Application that displays the values of the acceleration sensor graphically.
@@ -76,8 +73,7 @@ public class AccelerometerDemoActivity extends Activity {
      */
     private final Timer checkAccelListenerTimer = new Timer();
    
-    //FileOutputStream writer = new FileOutputStream(null);
-    
+   
     private class GraphView extends View implements SensorEventListener
     {
         private Bitmap  mBitmap;
@@ -260,21 +256,19 @@ public class AccelerometerDemoActivity extends Activity {
          * registered and spit out additional debugging info to the logs:
          */
         checkAccelListenerTimer.schedule(checkAccelerometerListener, 5000, 5000);
-        
-      
+     
        
         
         
         
-        alertbox("to Terminate", "terminate?");
+        alertbox("Alert Message to End", "Drop the Hammer?");
         
         
     }
     
     //----------------------------------------------------------------------------------------------------------------------CSVFile---------------
 
-    
-
+  
   //-----------------------------------------------------------------------------------------------------TIMERTASK-----------------
     /**
      * Task invoked by a timer periodically to make sure the location listener is
@@ -346,7 +340,7 @@ public class AccelerometerDemoActivity extends Activity {
        .setMessage(mymessage)  
       .setTitle(title)
        .setCancelable(true)  
-       .setNeutralButton(android.R.string.cancel,  
+       .setNeutralButton(android.R.string.ok,  
           new DialogInterface.OnClickListener() {  
           public void onClick(DialogInterface dialog, int whichButton){
         	  onDestroy();
