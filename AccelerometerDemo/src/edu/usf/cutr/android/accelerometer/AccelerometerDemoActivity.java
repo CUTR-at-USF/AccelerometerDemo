@@ -20,6 +20,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -196,7 +197,7 @@ public class AccelerometerDemoActivity extends Activity {
       //-----------------------------------------------------------------------------------------------------onSENSORCHANGE-----------------
         public void onSensorChanged(SensorEvent event) {
         	
-            Log.d("AccelerometerDemo", "sensor: " + event.sensor.getName() + ", x: " + event.values[0] + ", y: " + event.values[1] + ", z: " + event.values[2]);
+            //Log.d("AccelerometerDemo", "sensor: " + event.sensor.getName() + ", x: " + event.values[0] + ", y: " + event.values[1] + ", z: " + event.values[2]);
             
             	
             synchronized (this) {
@@ -256,12 +257,8 @@ public class AccelerometerDemoActivity extends Activity {
          * registered and spit out additional debugging info to the logs:
          */
         checkAccelListenerTimer.schedule(checkAccelerometerListener, 5000, 5000);
-     
-       
-        
-        
-        
-        alertbox("Alert Message to End", "Drop the Hammer?");
+            
+        alertbox("Alert Message to End", "roundhouse kick?");
         
         
     }
@@ -277,20 +274,46 @@ public class AccelerometerDemoActivity extends Activity {
     private TimerTask checkAccelerometerListener = new TimerTask() {
       @Override
       public void run() {
+    	  
         // It's always safe to assume that if isRecording() is true, it implies
         // that onCreate() has finished.
-
+    	  File root=null;  
+          
+          try {  
+    
+    
+              // check for SDcard   
+              root = Environment.getExternalStorageDirectory();  
+    
+    
+              Log.i("Writter","path.." +root.getAbsolutePath());  
+    
+    
+              //check sdcard permission  
+              if (root.canWrite()){  
+                  File fileDir = new File(root.getAbsolutePath()+"/fun/");  
+                  fileDir.mkdirs();  
+    
+                  File file= new File(fileDir, "itisfun.txt");  
+                  FileWriter filewriter = new FileWriter(file);  
+                  BufferedWriter out = new BufferedWriter(filewriter);  
+                  out.write("It's a miracle");  
+                  out.flush();
+                  out.close();  
+              }  
+          } catch (IOException e) {  
+              Log.e("ERROR:---", "Could not write file to SDCard" + e.getMessage());  
+          }  
     	  handler.post(new Runnable() {
             	  
             public void run() {
             	
-            	battery();
-            	
-            	
+            
             	//back on system thread
             	 if (isAccelActive == true) {
             		 
-            		 Log.d("Status", "Accelerometer is active");
+            		 Log.d("Status", "Accelerometer is inactive");
+            		// battery();
             		 mSensorManager.unregisterListener(mGraphView);
             		 isAccelActive=false;
             		 
@@ -307,7 +330,8 @@ public class AccelerometerDemoActivity extends Activity {
             	        mSensorManager.registerListener(mGraphView, 
             	                mSensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION),
             	                SensorManager.SENSOR_DELAY_FASTEST);
-            	        
+            	        Log.d("Satus", "Accelerometer is active");
+            	       // battery();
             	        isAccelActive=true;
             	 }//end if
             }//end of internal run
@@ -315,21 +339,11 @@ public class AccelerometerDemoActivity extends Activity {
             
             }//end of handler runnable
           );//close of handler runnable
+    	  
+
+    	  
     	  /**File writing**/
-      	try {
-			    File root = Environment.getExternalStorageDirectory();
-			    if (root.canWrite()){
-			        File gpxfile = new File(root, "file.txt");
-			        FileWriter gpxwriter = new FileWriter(gpxfile);
-			        BufferedWriter out = new BufferedWriter(gpxwriter);
-			        out.write("Hello world");
-			        out.close();
-			        Log.d("File", "Writting");
-			    }
-			} catch (IOException e) {
-			    Log.e("Error Error Error","Could not write file ");
-			}//end of file writing
-      	
+
       }//end of run
     };//end of timertask
 
@@ -352,6 +366,7 @@ public class AccelerometerDemoActivity extends Activity {
    //-----------------------------------------------------------------------------------------------------onDESTROY-----------------
     protected void onDestroy()
     {
+    	super.onDestroy();
     	checkAccelerometerListener.cancel();
     	checkAccelerometerListener = null;
     	checkAccelListenerTimer.cancel();
