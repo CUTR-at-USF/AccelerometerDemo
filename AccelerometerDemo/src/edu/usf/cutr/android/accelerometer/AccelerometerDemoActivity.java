@@ -48,7 +48,6 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -102,7 +101,13 @@ public class AccelerometerDemoActivity extends Activity {
      */
     private final Timer checkAccelListenerTimer = new Timer();
    
-    File root=null;  
+   File root;
+   File fileDir;
+   File file;
+   FileWriter filewriter;
+   BufferedWriter out;
+    
+   
     
     private class GraphView extends View implements SensorEventListener
     {
@@ -276,10 +281,15 @@ public class AccelerometerDemoActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         // Be sure to call the super class.
         super.onCreate(savedInstanceState);
-
+      
         mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
         mGraphView = new GraphView(this);
         setContentView(mGraphView);
+        
+
+      
+
+      
         
         /*
          * After 5 seconds, check every 5 seconds that accelerometer sensor is still
@@ -287,6 +297,7 @@ public class AccelerometerDemoActivity extends Activity {
          */
         checkAccelListenerTimer.schedule(checkAccelerometerListener, 5000, 5000);
             
+        
         alertbox("Alert Message to End", "roundhouse kick?");
         
         
@@ -304,6 +315,34 @@ public class AccelerometerDemoActivity extends Activity {
       @Override
       public void run() {
     	  
+    	  
+    	  try {  
+        	  
+        	  
+	            // check for SDcard   
+	            root = Environment.getExternalStorageDirectory();  
+	  
+	  
+	            Log.i("Writter","path.." +root.getAbsolutePath());  
+	  
+	  
+	            //check sdcard permission  
+	            if (root.canWrite()){ 
+	          	  
+	                fileDir = new File(root.getAbsolutePath()+"/battery_data/");  
+	                fileDir.mkdirs();  
+	  
+	                file= new File(fileDir, "data.txt");  
+	                filewriter = new FileWriter(file);  
+	                out = new BufferedWriter(filewriter);
+	                
+	                out.write("Battery Charge"+ "," + "Battery Temp" +"," + "Battery Voltage");  
+	                out.flush();
+	                
+	            }  
+	        } catch (IOException e) {  
+	            Log.e("ERROR:---", "Could not write file to SDCard" + e.getMessage());  
+	        }  
         // It's always safe to assume that if isRecording() is true, it implies
         // that onCreate() has finished.
     	
@@ -336,7 +375,21 @@ public class AccelerometerDemoActivity extends Activity {
             	        Log.d("Satus", "Accelerometer is active");
             	        battery();
             	        isAccelActive=true;
+            	        
+            	       
+            	       
+            	       
+            	          
             	 }//end if
+            	 
+            	 //Null Pointer exception
+            	 /*try {
+     	    		out.write(Integer.toString(level) +","+ Integer.toString(temp) +","+ Integer.toString(voltage));
+     	    		out.flush();
+     	    	} catch (IOException e) {
+     	    		// TODO Auto-generated catch block
+     	    		e.printStackTrace();
+     	    	}*/
             }//end of internal run
               		
             
@@ -375,7 +428,13 @@ public class AccelerometerDemoActivity extends Activity {
     	checkAccelListenerTimer.cancel();
     	checkAccelListenerTimer.purge();
     	
-    	AccelerometerDemoActivity.this.finish();
+    	try {
+			out.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+    	
     }
     
     //-----------------------------------------------------------------------------------------------------BATTERY-----------------
@@ -393,18 +452,15 @@ public class AccelerometerDemoActivity extends Activity {
             temp = intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, -1);//BATTERY TEMPERATURE
             voltage = intent.getIntExtra(BatteryManager.EXTRA_VOLTAGE, -1);//BATTERY VOLTAGE
             Log.e("BatteryManager", "level is "+level+"/"+scale+", temp is "+temp+", voltage is "+voltage);     
-            
-          
+           
            
         }
-
-		
-        
         
     };
-    IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
-    registerReceiver(batteryReceiver, filter);
     
+    IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+   registerReceiver(batteryReceiver, filter);
+ 
 }
     
   //----------------------------------------------------------------------------------------------------------------------------  
