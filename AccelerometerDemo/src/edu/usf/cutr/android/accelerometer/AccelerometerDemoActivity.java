@@ -13,7 +13,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+/** File Writting algorithm
+  File root=null;  
+            
+            try {  
+      
+      
+                // check for SDcard   
+                root = Environment.getExternalStorageDirectory();  
+      
+      
+                Log.i("Writter","path.." +root.getAbsolutePath());  
+      
+      
+                //check sdcard permission  
+                if (root.canWrite()){  
+                    File fileDir = new File(root.getAbsolutePath()+"/battery_data/");  
+                    fileDir.mkdirs();  
+      
+                    File file= new File(fileDir, "data.txt");  
+                    FileWriter filewriter = new FileWriter(file);  
+                    BufferedWriter out = new BufferedWriter(filewriter);  
+                    out.write(Integer.toString(level)+ "," + Integer.toString(temp) +"," + Integer.toString(voltage));  
+                    out.flush();
+                    out.close();  
+                }  
+            } catch (IOException e) {  
+                Log.e("ERROR:---", "Could not write file to SDCard" + e.getMessage());  
+            }  
+            **/
 package edu.usf.cutr.android.accelerometer;
 
 import java.io.BufferedWriter;
@@ -74,7 +102,8 @@ public class AccelerometerDemoActivity extends Activity {
      */
     private final Timer checkAccelListenerTimer = new Timer();
    
-   
+    File root=null;  
+    
     private class GraphView extends View implements SensorEventListener
     {
         private Bitmap  mBitmap;
@@ -277,33 +306,7 @@ public class AccelerometerDemoActivity extends Activity {
     	  
         // It's always safe to assume that if isRecording() is true, it implies
         // that onCreate() has finished.
-    	  File root=null;  
-          
-          try {  
-    
-    
-              // check for SDcard   
-              root = Environment.getExternalStorageDirectory();  
-    
-    
-              Log.i("Writter","path.." +root.getAbsolutePath());  
-    
-    
-              //check sdcard permission  
-              if (root.canWrite()){  
-                  File fileDir = new File(root.getAbsolutePath()+"/fun/");  
-                  fileDir.mkdirs();  
-    
-                  File file= new File(fileDir, "itisfun.txt");  
-                  FileWriter filewriter = new FileWriter(file);  
-                  BufferedWriter out = new BufferedWriter(filewriter);  
-                  out.write("It's a miracle");  
-                  out.flush();
-                  out.close();  
-              }  
-          } catch (IOException e) {  
-              Log.e("ERROR:---", "Could not write file to SDCard" + e.getMessage());  
-          }  
+    	
     	  handler.post(new Runnable() {
             	  
             public void run() {
@@ -331,7 +334,7 @@ public class AccelerometerDemoActivity extends Activity {
             	                mSensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION),
             	                SensorManager.SENSOR_DELAY_FASTEST);
             	        Log.d("Satus", "Accelerometer is active");
-            	       // battery();
+            	        battery();
             	        isAccelActive=true;
             	 }//end if
             }//end of internal run
@@ -372,7 +375,7 @@ public class AccelerometerDemoActivity extends Activity {
     	checkAccelListenerTimer.cancel();
     	checkAccelListenerTimer.purge();
     	
-    	finish();
+    	AccelerometerDemoActivity.this.finish();
     }
     
     //-----------------------------------------------------------------------------------------------------BATTERY-----------------
@@ -386,10 +389,12 @@ public class AccelerometerDemoActivity extends Activity {
         public void onReceive(Context context, Intent intent) {
         	
             level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);//BATTERY CHARGE
-            scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1);//SCALE OF BATTERY CHARGE
+            scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1);//SCALE OF FULL BATTERY CHARGE
             temp = intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, -1);//BATTERY TEMPERATURE
             voltage = intent.getIntExtra(BatteryManager.EXTRA_VOLTAGE, -1);//BATTERY VOLTAGE
-            Log.e("BatteryManager", "level is "+level+"/"+scale+", temp is "+temp+", voltage is "+voltage);         
+            Log.e("BatteryManager", "level is "+level+"/"+scale+", temp is "+temp+", voltage is "+voltage);     
+            
+          
            
         }
 
