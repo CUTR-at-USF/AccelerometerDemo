@@ -109,6 +109,7 @@ public class AccelerometerDemoActivity extends Activity {
    FileWriter filewriter;
    BufferedWriter out;
    Date timestamp;
+   Date datestamp;
 	SimpleDateFormat csvFormatter;
 	String csvFormattedDate;
    final int interval=5000;
@@ -293,10 +294,15 @@ public class AccelerometerDemoActivity extends Activity {
 
         
         
+    	
+    	
     	csvFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");  //formatter for CSV timestamp field
     										//crashes with adding  HH:mm:ss
     	
-       
+    	datestamp = new Date();
+    	SimpleDateFormat csvFrm = new SimpleDateFormat("yyyy-MM-dd");
+    	String csvFormatFile = csvFrm.format(datestamp);
+    	
         try {  
       	  
       	  
@@ -312,8 +318,8 @@ public class AccelerometerDemoActivity extends Activity {
           	  
                 fileDir = new File(root.getAbsolutePath()+"/battery_data/");  
                 fileDir.mkdirs();  
-              
-                file= new File(fileDir, csvFormattedDate +"_interval" +"_"+ interval+".csv");  
+               
+                file= new File(fileDir, csvFormatFile +"_interval" +"_"+ interval+".csv");  
                 filewriter = new FileWriter(file);  
                 out = new BufferedWriter(filewriter);
                 
