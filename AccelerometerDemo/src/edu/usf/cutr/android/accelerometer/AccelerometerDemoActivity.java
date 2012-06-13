@@ -291,13 +291,12 @@ public class AccelerometerDemoActivity extends Activity {
         setContentView(mGraphView);
         
 
-        timestamp = new Date();
         
-    	csvFormatter = new SimpleDateFormat("yyyy-MM-dd");  //formatter for CSV timestamp field
+        
+    	csvFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");  //formatter for CSV timestamp field
     										//crashes with adding  HH:mm:ss
-    	csvFormattedDate = csvFormatter.format(timestamp);
+    	
        
-      
         try {  
       	  
       	  
@@ -332,7 +331,7 @@ public class AccelerometerDemoActivity extends Activity {
         checkAccelListenerTimer.schedule(checkAccelerometerListener, 5000, 5000);
             
         
-        alertbox("Alert Message to End", "roundhouse kick?");
+        
         
         
     }
@@ -367,6 +366,8 @@ public class AccelerometerDemoActivity extends Activity {
             		 mSensorManager.unregisterListener(mGraphView);
             		 isAccelActive=false;
             		 
+            		 unregisterReceiver(batteryReceiver);
+         	        
             	 }//end of if
             	 if (isAccelActive == false) {
             		 
@@ -381,7 +382,16 @@ public class AccelerometerDemoActivity extends Activity {
             	                mSensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION),
             	                SensorManager.SENSOR_DELAY_FASTEST);
             	        Log.d("Satus", "Accelerometer is active");
-            	        battery();
+            	        
+            	        
+            	        IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+            	        registerReceiver(batteryReceiver, filter);
+            	        
+            	        
+            	        
+            	        
+            	        
+            	        
             	        isAccelActive=true;
             	        
             	       
@@ -413,7 +423,7 @@ public class AccelerometerDemoActivity extends Activity {
        .setNeutralButton(android.R.string.ok,  
           new DialogInterface.OnClickListener() {  
           public void onClick(DialogInterface dialog, int whichButton){
-        	  onDestroy();
+        	  finish();
           }  
           })  
        .show(); 
@@ -427,7 +437,7 @@ public class AccelerometerDemoActivity extends Activity {
     	checkAccelerometerListener = null;
     	checkAccelListenerTimer.cancel();
     	checkAccelListenerTimer.purge();
-    	
+    	unregisterReceiver(batteryReceiver);
     	try {
     		out.flush();
 			out.close();
@@ -440,7 +450,7 @@ public class AccelerometerDemoActivity extends Activity {
     
     //-----------------------------------------------------------------------------------------------------BATTERY-----------------
     
-    protected void battery(){
+    
     	
     BroadcastReceiver batteryReceiver = new BroadcastReceiver() {
        
@@ -456,6 +466,9 @@ public class AccelerometerDemoActivity extends Activity {
            
             try {
             	
+            	timestamp = new Date();
+            	csvFormattedDate = csvFormatter.format(timestamp);
+            	
             	out.newLine();
  	    		out.append(csvFormattedDate +","+ Integer.toString(level));
  	    		
@@ -467,10 +480,9 @@ public class AccelerometerDemoActivity extends Activity {
         
     };
     
-    IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
-   registerReceiver(batteryReceiver, filter);
+    
  
-}
+
     
   //----------------------------------------------------------------------------------------------------------------------------  
     /**Unused methods**/
