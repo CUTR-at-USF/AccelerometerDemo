@@ -48,6 +48,8 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -106,8 +108,10 @@ public class AccelerometerDemoActivity extends Activity {
    File file;
    FileWriter filewriter;
    BufferedWriter out;
-    
-   
+   Date timestamp;
+	SimpleDateFormat csvFormatter;
+	String csvFormattedDate;
+   final int interval=5000;
     
     private class GraphView extends View implements SensorEventListener
     {
@@ -287,8 +291,12 @@ public class AccelerometerDemoActivity extends Activity {
         setContentView(mGraphView);
         
 
-      
-
+        timestamp = new Date();
+        
+    	csvFormatter = new SimpleDateFormat("yyyy-MM-dd");  //formatter for CSV timestamp field
+    										//crashes with adding  HH:mm:ss
+    	csvFormattedDate = csvFormatter.format(timestamp);
+       
       
         try {  
       	  
@@ -305,12 +313,12 @@ public class AccelerometerDemoActivity extends Activity {
           	  
                 fileDir = new File(root.getAbsolutePath()+"/battery_data/");  
                 fileDir.mkdirs();  
-  
-                file= new File(fileDir, "data.txt");  
+              
+                file= new File(fileDir, csvFormattedDate +"_interval" +"_"+ interval+".csv");  
                 filewriter = new FileWriter(file);  
                 out = new BufferedWriter(filewriter);
                 
-                out.write("Battery Charge"+ "," + "Battery Temp" +"," + "Battery Voltage"+'\n');  
+                out.write("DateTime+" +","+ "BatteryLevel(0-100)");  
                
                 
             }  
@@ -449,7 +457,7 @@ public class AccelerometerDemoActivity extends Activity {
             try {
             	
             	out.newLine();
- 	    		out.append(Integer.toString(level) +","+ Integer.toString(temp) +","+ Integer.toString(voltage)+'\n');
+ 	    		out.append(csvFormattedDate +","+ Integer.toString(level));
  	    		
  	    	} catch (IOException e) {
  	    		// TODO Auto-generated catch block
