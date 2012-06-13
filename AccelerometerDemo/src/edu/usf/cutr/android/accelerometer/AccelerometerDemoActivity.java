@@ -290,7 +290,33 @@ public class AccelerometerDemoActivity extends Activity {
       
 
       
-        
+        try {  
+      	  
+      	  
+            // check for SDcard   
+            root = Environment.getExternalStorageDirectory();  
+  
+  
+            Log.i("Writter","path.." +root.getAbsolutePath());  
+  
+  
+            //check sdcard permission  
+            if (root.canWrite()){ 
+          	  
+                fileDir = new File(root.getAbsolutePath()+"/battery_data/");  
+                fileDir.mkdirs();  
+  
+                file= new File(fileDir, "data.txt");  
+                filewriter = new FileWriter(file);  
+                out = new BufferedWriter(filewriter);
+                
+                out.write("Battery Charge"+ "," + "Battery Temp" +"," + "Battery Voltage"+'\n');  
+               
+                
+            }  
+        } catch (IOException e) {  
+            Log.e("ERROR:---", "Could not write file to SDCard" + e.getMessage());  
+        }  
         /*
          * After 5 seconds, check every 5 seconds that accelerometer sensor is still
          * registered and spit out additional debugging info to the logs:
@@ -315,39 +341,13 @@ public class AccelerometerDemoActivity extends Activity {
       @Override
       public void run() {
     	  
-    	  
-    	  try {  
-        	  
-        	  
-	            // check for SDcard   
-	            root = Environment.getExternalStorageDirectory();  
-	  
-	  
-	            Log.i("Writter","path.." +root.getAbsolutePath());  
-	  
-	  
-	            //check sdcard permission  
-	            if (root.canWrite()){ 
-	          	  
-	                fileDir = new File(root.getAbsolutePath()+"/battery_data/");  
-	                fileDir.mkdirs();  
-	  
-	                file= new File(fileDir, "data.txt");  
-	                filewriter = new FileWriter(file);  
-	                out = new BufferedWriter(filewriter);
-	                
-	                out.write("Battery Charge"+ "," + "Battery Temp" +"," + "Battery Voltage");  
-	                out.flush();
-	                
-	            }  
-	        } catch (IOException e) {  
-	            Log.e("ERROR:---", "Could not write file to SDCard" + e.getMessage());  
-	        }  
+    	 
+    	
         // It's always safe to assume that if isRecording() is true, it implies
         // that onCreate() has finished.
     	
     	  handler.post(new Runnable() {
-            	  
+    	
             public void run() {
             	
             
@@ -381,22 +381,14 @@ public class AccelerometerDemoActivity extends Activity {
             	       
             	          
             	 }//end if
+            	
             	 
-            	 //Null Pointer exception
-            	 /*try {
-     	    		out.write(Integer.toString(level) +","+ Integer.toString(temp) +","+ Integer.toString(voltage));
-     	    		out.flush();
-     	    	} catch (IOException e) {
-     	    		// TODO Auto-generated catch block
-     	    		e.printStackTrace();
-     	    	}*/
+            	
             }//end of internal run
               		
             
             }//end of handler runnable
           );//close of handler runnable
-    	  
-
     	  
     	  /**File writing**/
 
@@ -429,6 +421,7 @@ public class AccelerometerDemoActivity extends Activity {
     	checkAccelListenerTimer.purge();
     	
     	try {
+    		out.flush();
 			out.close();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
@@ -453,7 +446,15 @@ public class AccelerometerDemoActivity extends Activity {
             voltage = intent.getIntExtra(BatteryManager.EXTRA_VOLTAGE, -1);//BATTERY VOLTAGE
             Log.e("BatteryManager", "level is "+level+"/"+scale+", temp is "+temp+", voltage is "+voltage);     
            
-           
+            try {
+            	
+            	out.newLine();
+ 	    		out.append(Integer.toString(level) +","+ Integer.toString(temp) +","+ Integer.toString(voltage)+'\n');
+ 	    		
+ 	    	} catch (IOException e) {
+ 	    		// TODO Auto-generated catch block
+ 	    		e.printStackTrace();
+ 	    	}
         }
         
     };
