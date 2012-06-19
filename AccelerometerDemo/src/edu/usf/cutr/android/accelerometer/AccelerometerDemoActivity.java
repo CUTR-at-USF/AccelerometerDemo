@@ -15,22 +15,22 @@
  */
 /** File Writting algorithm
   File root=null;  
-            
+
             try {  
-      
-      
+
+
                 // check for SDcard   
                 root = Environment.getExternalStorageDirectory();  
-      
-      
+
+
                 Log.i("Writter","path.." +root.getAbsolutePath());  
-      
-      
+
+
                 //check sdcard permission  
                 if (root.canWrite()){  
                     File fileDir = new File(root.getAbsolutePath()+"/battery_data/");  
                     fileDir.mkdirs();  
-      
+
                     File file= new File(fileDir, "data.txt");  
                     FileWriter filewriter = new FileWriter(file);  
                     BufferedWriter out = new BufferedWriter(filewriter);  
@@ -41,7 +41,7 @@
             } catch (IOException e) {  
                 Log.e("ERROR:---", "Could not write file to SDCard" + e.getMessage());  
             }  
-            **/
+ **/
 package edu.usf.cutr.android.accelerometer;
 
 import java.io.BufferedWriter;
@@ -60,6 +60,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.ActivityInfo;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -86,428 +87,413 @@ import android.view.View;
 
  */
 public class AccelerometerDemoActivity extends Activity {
+
 	
-    private SensorManager mSensorManager;
-    private GraphView mGraphView;
-    //battery variables
-    int scale = -1;
-    int level = -1;
-    int voltage = -1;
-    int temp = -1;
-    
-    static boolean isAccelActive = false;
-    /** The timer posts a runnable to the main thread via this handler. */
-    private final Handler handler = new Handler();
-    /**
-     * This timer invokes periodically the checkLocationListener timer task.
-     */
-    private final Timer checkAccelListenerTimer = new Timer();
-   
-   File root;
-   File fileDir;
-   File file;
-   FileWriter filewriter;
-   BufferedWriter out;
-   Date timestamp;
-   Date datestamp;
+	private SensorManager mSensorManager;
+	private GraphView mGraphView;
+
+	//battery variables
+	int scale = -1;
+	int level = -1;
+	int voltage = -1;
+	int temp = -1;
+
+	static boolean isAccelActive = false;
+	/** The timer posts a runnable to the main thread via this handler. */
+	private final Handler handler = new Handler();
+	/**
+	 * This timer invokes periodically the checkLocationListener timer task.
+	 */
+	private final Timer checkAccelListenerTimer = new Timer();
+
+	File root;
+	File fileDir;
+	File file;
+	FileWriter filewriter;
+	BufferedWriter out;
+
+	//time variables
+	Date timestamp;
+	Date datestamp;
 	SimpleDateFormat csvFormatter;
 	String csvFormattedDate;
-   final int interval=5000;
-    
-    private class GraphView extends View implements SensorEventListener
-    {
-        private Bitmap  mBitmap;
-        private Paint   mPaint = new Paint();
-        private Canvas  mCanvas = new Canvas();
-        private Path    mPath = new Path();
-        private RectF   mRect = new RectF();
-        private float   mLastValues[] = new float[3*2];
-        private float   mOrientationValues[] = new float[3];
-        private int     mColors[] = new int[3*2];
-        private float   mLastX;
-        private float   mScale[] = new float[2];
-        private float   mYOffset;
-        private float   mMaxX;
-        private float   mSpeed = 1.0f;
-        private float   mWidth;
-        private float   mHeight;
-        
-      //-----------------------------------------------------------------------------------------------------GRAPHVIEW CONTRUCTOR-----------------
-        public GraphView(Context context) {
-            super(context);
-            mColors[0] = Color.argb(192, 255, 64, 64);
-            mColors[1] = Color.argb(192, 64, 128, 64);
-            mColors[2] = Color.argb(192, 64, 64, 255);
-            mColors[3] = Color.argb(192, 64, 255, 255);
-            mColors[4] = Color.argb(192, 128, 64, 128);
-            mColors[5] = Color.argb(192, 255, 255, 64);
+	final int interval=5000;
 
-            mPaint.setFlags(Paint.ANTI_ALIAS_FLAG);
-            mRect.set(-0.5f, -0.5f, 0.5f, 0.5f);
-            mPath.arcTo(mRect, 0, 180);
-        }
-      //-----------------------------------------------------------------------------------------------------onSIZECHANGED-----------------
-        @Override
-        protected void onSizeChanged(int w, int h, int oldw, int oldh) {
-            mBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.RGB_565);
-            mCanvas.setBitmap(mBitmap);
-            mCanvas.drawColor(0xFFFFFFFF);
-            mYOffset = h * 0.5f;
-            mScale[0] = - (h * 0.5f * (1.0f / (SensorManager.STANDARD_GRAVITY * 2)));
-            mScale[1] = - (h * 0.5f * (1.0f / (SensorManager.MAGNETIC_FIELD_EARTH_MAX)));
-            mWidth = w;
-            mHeight = h;
-            if (mWidth < mHeight) {
-                mMaxX = w;
-            } else {
-                mMaxX = w-50;
-            }
-            mLastX = mMaxX;
-            super.onSizeChanged(w, h, oldw, oldh);
-        }
-      //-----------------------------------------------------------------------------------------------------onDRAW-----------------
-        @Override
-        protected void onDraw(Canvas canvas) {
-            synchronized (this) {
-                if (mBitmap != null) {
-                    final Paint paint = mPaint;
-                    final Path path = mPath;
-                    final int outer = 0xFFC0C0C0;
-                    final int inner = 0xFFff7010;
 
-                    if (mLastX >= mMaxX) {
-                        mLastX = 0;
-                        final Canvas cavas = mCanvas;
-                        final float yoffset = mYOffset;
-                        final float maxx = mMaxX;
-                        final float oneG = SensorManager.STANDARD_GRAVITY * mScale[0];
-                        paint.setColor(0xFFAAAAAA);
-                        cavas.drawColor(0xFFFFFFFF);
-                        cavas.drawLine(0, yoffset,      maxx, yoffset,      paint);
-                        cavas.drawLine(0, yoffset+oneG, maxx, yoffset+oneG, paint);
-                        cavas.drawLine(0, yoffset-oneG, maxx, yoffset-oneG, paint);
-                    }
-                    canvas.drawBitmap(mBitmap, 0, 0, null);
 
-                    float[] values = mOrientationValues;
-                    if (mWidth < mHeight) {
-                        float w0 = mWidth * 0.333333f;
-                        float w  = w0 - 32;
-                        float x = w0*0.5f;
-                        for (int i=0 ; i<3 ; i++) {
-                            canvas.save(Canvas.MATRIX_SAVE_FLAG);
-                            canvas.translate(x, w*0.5f + 4.0f);
-                            canvas.save(Canvas.MATRIX_SAVE_FLAG);
-                            paint.setColor(outer);
-                            canvas.scale(w, w);
-                            canvas.drawOval(mRect, paint);
-                            canvas.restore();
-                            canvas.scale(w-5, w-5);
-                            paint.setColor(inner);
-                            canvas.rotate(-values[i]);
-                            canvas.drawPath(path, paint);
-                            canvas.restore();
-                            x += w0;
-                        }
-                    } else {
-                        float h0 = mHeight * 0.333333f;
-                        float h  = h0 - 32;
-                        float y = h0*0.5f;
-                        for (int i=0 ; i<3 ; i++) {
-                            canvas.save(Canvas.MATRIX_SAVE_FLAG);
-                            canvas.translate(mWidth - (h*0.5f + 4.0f), y);
-                            canvas.save(Canvas.MATRIX_SAVE_FLAG);
-                            paint.setColor(outer);
-                            canvas.scale(h, h);
-                            canvas.drawOval(mRect, paint);
-                            canvas.restore();
-                            canvas.scale(h-5, h-5);
-                            paint.setColor(inner);
-                            canvas.rotate(-values[i]);
-                            canvas.drawPath(path, paint);
-                            canvas.restore();
-                            y += h0;
-                        }
-                    }
+	private class GraphView extends View implements SensorEventListener
+	{
+		private Bitmap  mBitmap;
+		private Paint   mPaint = new Paint();
+		private Canvas  mCanvas = new Canvas();
+		private Path    mPath = new Path();
+		private RectF   mRect = new RectF();
+		private float   mLastValues[] = new float[3*2];
+		private float   mOrientationValues[] = new float[3];
+		private int     mColors[] = new int[3*2];
+		private float   mLastX;
+		private float   mScale[] = new float[2];
+		private float   mYOffset;
+		private float   mMaxX;
+		private float   mSpeed = 1.0f;
+		private float   mWidth;
+		private float   mHeight;
 
-                }
-            }
-        }
-      //-----------------------------------------------------------------------------------------------------onSENSORCHANGE-----------------
-        public void onSensorChanged(SensorEvent event) {
-        	
-            //Log.d("AccelerometerDemo", "sensor: " + event.sensor.getName() + ", x: " + event.values[0] + ", y: " + event.values[1] + ", z: " + event.values[2]);
-            
-            	
-            synchronized (this) {
-            	
-                if (mBitmap != null) {
-                	
-                    final Canvas canvas = mCanvas;
-                    final Paint paint = mPaint;
-                    
-                    if (event.sensor.getType() == Sensor.TYPE_ORIENTATION) {
-                        for (int i=0 ; i<3 ; i++) {
-                            mOrientationValues[i] = event.values[i];
-                        }
-                    } else {
-                        float deltaX = mSpeed;
-                        float newX = mLastX + deltaX;
+		//-----------------------------------------------------------------------------------------------------GRAPHVIEW CONTRUCTOR-----------------
+		public GraphView(Context context) {
+			super(context);
+			mColors[0] = Color.argb(192, 255, 64, 64);
+			mColors[1] = Color.argb(192, 64, 128, 64);
+			mColors[2] = Color.argb(192, 64, 64, 255);
+			mColors[3] = Color.argb(192, 64, 255, 255);
+			mColors[4] = Color.argb(192, 128, 64, 128);
+			mColors[5] = Color.argb(192, 255, 255, 64);
 
-                        int j = (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD) ? 1 : 0;
-                        
-                        for (int i=0 ; i<3 ; i++) {
-                            int k = i+j*3;
-                            
-                            final float v = mYOffset + event.values[i] * mScale[j];
-                            paint.setColor(mColors[k]);
-                            canvas.drawLine(mLastX, mLastValues[k], newX, v, paint);
-                            mLastValues[k] = v;
-                        }
-                        
-                        if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD)
-                            mLastX += mSpeed;
-                    }
-                    invalidate();
-                }
-            }
-        }
+			mPaint.setFlags(Paint.ANTI_ALIAS_FLAG);
+			mRect.set(-0.5f, -0.5f, 0.5f, 0.5f);
+			mPath.arcTo(mRect, 0, 180);
+		}
+		//-----------------------------------------------------------------------------------------------------onSIZECHANGED-----------------
+		@Override
+		protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+			mBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.RGB_565);
+			mCanvas.setBitmap(mBitmap);
+			mCanvas.drawColor(0xFFFFFFFF);
+			mYOffset = h * 0.5f;
+			mScale[0] = - (h * 0.5f * (1.0f / (SensorManager.STANDARD_GRAVITY * 2)));
+			mScale[1] = - (h * 0.5f * (1.0f / (SensorManager.MAGNETIC_FIELD_EARTH_MAX)));
+			mWidth = w;
+			mHeight = h;
+			if (mWidth < mHeight) {
+				mMaxX = w;
+			} else {
+				mMaxX = w-50;
+			}
+			mLastX = mMaxX;
+			super.onSizeChanged(w, h, oldw, oldh);
+		}
+		//-----------------------------------------------------------------------------------------------------onDRAW-----------------
+		@Override
+		protected void onDraw(Canvas canvas) {
+			synchronized (this) {
+				if (mBitmap != null) {
+					final Paint paint = mPaint;
+					final Path path = mPath;
+					final int outer = 0xFFC0C0C0;
+					final int inner = 0xFFff7010;
 
-        public void onAccuracyChanged(Sensor sensor, int accuracy) {
-        }
-    }
-  //-----------------------------------------------------------------------------------------------------onCREATE-----------------
-    /**
-     * Initialization of the Activity after it is first created.  Must at least
-     * call {@link android.app.Activity#setContentView setContentView()} to
-     * describe what is to be displayed in the screen.
-     */
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        // Be sure to call the super class.
-        super.onCreate(savedInstanceState);
-      
-        mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
-        mGraphView = new GraphView(this);
-        setContentView(mGraphView);
-        
+					if (mLastX >= mMaxX) {
+						mLastX = 0;
+						final Canvas cavas = mCanvas;
+						final float yoffset = mYOffset;
+						final float maxx = mMaxX;
+						final float oneG = SensorManager.STANDARD_GRAVITY * mScale[0];
+						paint.setColor(0xFFAAAAAA);
+						cavas.drawColor(0xFFFFFFFF);
+						cavas.drawLine(0, yoffset,      maxx, yoffset,      paint);
+						cavas.drawLine(0, yoffset+oneG, maxx, yoffset+oneG, paint);
+						cavas.drawLine(0, yoffset-oneG, maxx, yoffset-oneG, paint);
+					}
+					canvas.drawBitmap(mBitmap, 0, 0, null);
 
-        
-        
-    	
-    	
-    	csvFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");  //formatter for CSV timestamp field
-    										//crashes with adding  HH:mm:ss
-    	
-    	datestamp = new Date();
-    	SimpleDateFormat csvFrm = new SimpleDateFormat("yyyy-MM-dd");
-    	String csvFormatFile = csvFrm.format(datestamp);
-    	
-        try {  
-      	  
-      	  
-            // check for SDcard   
-            root = Environment.getExternalStorageDirectory();  
-  
-  
-            Log.i("Writter","path.." +root.getAbsolutePath());  
-  
-  
-            //check sdcard permission  
-            if (root.canWrite()){ 
-          	  
-                fileDir = new File(root.getAbsolutePath()+"/battery_data/");  
-                fileDir.mkdirs();  
-               
-                file= new File(fileDir, csvFormatFile +"_interval" +"_"+ interval+".csv");  
-                filewriter = new FileWriter(file);  
-                out = new BufferedWriter(filewriter);
-                
-                out.write("DateTime+" +","+ "BatteryLevel(0-100)");  
-               
-                
-            }  
-        } catch (IOException e) {  
-            Log.e("ERROR:---", "Could not write file to SDCard" + e.getMessage());  
-        }  
-        /*
-         * After 5 seconds, check every 5 seconds that accelerometer sensor is still
-         * registered and spit out additional debugging info to the logs:
-         */
-        checkAccelListenerTimer.schedule(checkAccelerometerListener, 5000, 5000);
-            
-        
-        
-        
-        
-    }
-    
-    //----------------------------------------------------------------------------------------------------------------------CSVFile---------------
+					float[] values = mOrientationValues;
+					if (mWidth < mHeight) {
+						float w0 = mWidth * 0.333333f;
+						float w  = w0 - 32;
+						float x = w0*0.5f;
+						for (int i=0 ; i<3 ; i++) {
+							canvas.save(Canvas.MATRIX_SAVE_FLAG);
+							canvas.translate(x, w*0.5f + 4.0f);
+							canvas.save(Canvas.MATRIX_SAVE_FLAG);
+							paint.setColor(outer);
+							canvas.scale(w, w);
+							canvas.drawOval(mRect, paint);
+							canvas.restore();
+							canvas.scale(w-5, w-5);
+							paint.setColor(inner);
+							canvas.rotate(-values[i]);
+							canvas.drawPath(path, paint);
+							canvas.restore();
+							x += w0;
+						}
+					} else {
+						float h0 = mHeight * 0.333333f;
+						float h  = h0 - 32;
+						float y = h0*0.5f;
+						for (int i=0 ; i<3 ; i++) {
+							canvas.save(Canvas.MATRIX_SAVE_FLAG);
+							canvas.translate(mWidth - (h*0.5f + 4.0f), y);
+							canvas.save(Canvas.MATRIX_SAVE_FLAG);
+							paint.setColor(outer);
+							canvas.scale(h, h);
+							canvas.drawOval(mRect, paint);
+							canvas.restore();
+							canvas.scale(h-5, h-5);
+							paint.setColor(inner);
+							canvas.rotate(-values[i]);
+							canvas.drawPath(path, paint);
+							canvas.restore();
+							y += h0;
+						}
+					}
 
-  
-  //-----------------------------------------------------------------------------------------------------TIMERTASK-----------------
-    /**
-     * Task invoked by a timer periodically to make sure the location listener is
-     * still registered.
-     */
-    private TimerTask checkAccelerometerListener = new TimerTask() {
-      @Override
-      public void run() {
-    	  
-    	 
-    	
-        // It's always safe to assume that if isRecording() is true, it implies
-        // that onCreate() has finished.
-    	
-    	  handler.post(new Runnable() {
-    	
-            public void run() {
-            	
-            
-            	//back on system thread
-            	 if (isAccelActive == true) {
-            		 
-            		 Log.d("Status", "Accelerometer is inactive");
-            		// battery();
-            		 mSensorManager.unregisterListener(mGraphView);
-            		 isAccelActive=false;
-            		 
-            		 unregisterReceiver(batteryReceiver);
-         	        
-            	 }//end of if
-            	 if (isAccelActive == false) {
-            		 
-            		 
-            		 mSensorManager.registerListener(mGraphView,
-            	                mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
-            	                SensorManager.SENSOR_DELAY_FASTEST);
-            	        mSensorManager.registerListener(mGraphView,
-            	                mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD),
-            	                SensorManager.SENSOR_DELAY_FASTEST);
-            	        mSensorManager.registerListener(mGraphView, 
-            	                mSensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION),
-            	                SensorManager.SENSOR_DELAY_FASTEST);
-            	        Log.d("Satus", "Accelerometer is active");
-            	        
-            	        
-            	        IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
-            	        registerReceiver(batteryReceiver, filter);
-            	        
-            	        
-            	        
-            	        
-            	        
-            	        
-            	        isAccelActive=true;
-            	        
-            	       
-            	       
-            	       
-            	          
-            	 }//end if
-            	
-            	 
-            	
-            }//end of internal run
-              		
-            
-            }//end of handler runnable
-          );//close of handler runnable
-    	  
-    	  /**File writing**/
+				}
+			}
+		}
+		//-----------------------------------------------------------------------------------------------------onSENSORCHANGE-----------------
+		public void onSensorChanged(SensorEvent event) {
 
-      }//end of run
-    };//end of timertask
+			//Log.d("AccelerometerDemo", "sensor: " + event.sensor.getName() + ", x: " + event.values[0] + ", y: " + event.values[1] + ", z: " + event.values[2]);
 
-  //-----------------------------------------------------------------------------------------------------ALERTBOX-----------------
-   protected void alertbox(String title, String mymessage)  
-    {  
-    new AlertDialog.Builder(this)  
-       .setMessage(mymessage)  
-      .setTitle(title)
-       .setCancelable(true)  
-       .setNeutralButton(android.R.string.ok,  
-          new DialogInterface.OnClickListener() {  
-          public void onClick(DialogInterface dialog, int whichButton){
-        	  finish();
-          }  
-          })  
-       .show(); 
-    }
-    
-   //-----------------------------------------------------------------------------------------------------onDESTROY-----------------
-    protected void onDestroy()
-    {
-    	super.onDestroy();
-    	checkAccelerometerListener.cancel();
-    	checkAccelerometerListener = null;
-    	checkAccelListenerTimer.cancel();
-    	checkAccelListenerTimer.purge();
-    	unregisterReceiver(batteryReceiver);
-    	try {
-    		out.flush();
+
+			synchronized (this) {
+
+				if (mBitmap != null) {
+
+					final Canvas canvas = mCanvas;
+					final Paint paint = mPaint;
+
+					if (event.sensor.getType() == Sensor.TYPE_ORIENTATION) {
+						for (int i=0 ; i<3 ; i++) {
+							mOrientationValues[i] = event.values[i];
+						}
+					} else {
+						float deltaX = mSpeed;
+						float newX = mLastX + deltaX;
+
+						int j = (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD) ? 1 : 0;
+
+						for (int i=0 ; i<3 ; i++) {
+							int k = i+j*3;
+
+							final float v = mYOffset + event.values[i] * mScale[j];
+							paint.setColor(mColors[k]);
+							canvas.drawLine(mLastX, mLastValues[k], newX, v, paint);
+							mLastValues[k] = v;
+						}
+
+						if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD)
+							mLastX += mSpeed;
+					}
+					invalidate();
+				}
+			}
+		}
+
+		public void onAccuracyChanged(Sensor sensor, int accuracy) {
+		}
+	}
+	//-----------------------------------------------------------------------------------------------------onCREATE-----------------
+	/**
+	 * Initialization of the Activity after it is first created.  Must at least
+	 * call {@link android.app.Activity#setContentView setContentView()} to
+	 * describe what is to be displayed in the screen.
+	 */
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		// Be sure to call the super class.
+		super.onCreate(savedInstanceState);
+
+		mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
+		mGraphView = new GraphView(this);
+		setContentView(mGraphView);
+
+		
+
+
+
+		//----------------------------------------------------------------------------------------------------------------------CSVFile---------------
+		csvFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");  //formatter for CSV timestamp field
+		//crashes with adding  HH:mm:ss
+
+		datestamp = new Date();
+		SimpleDateFormat csvFrm = new SimpleDateFormat("yyyy-MM-dd");
+		String csvFormatFile = csvFrm.format(datestamp);
+
+		try {  
+
+
+			// check for SDcard   
+			root = Environment.getExternalStorageDirectory();  
+
+
+			Log.i("Writter","path.." +root.getAbsolutePath());  
+
+
+			//check sdcard permission  
+			if (root.canWrite()){ 
+
+				fileDir = new File(root.getAbsolutePath()+"/battery_data/");  
+				fileDir.mkdirs();  
+
+				file= new File(fileDir, csvFormatFile +"_interval" +"_"+ interval+".csv");  
+				filewriter = new FileWriter(file);  
+				out = new BufferedWriter(filewriter);
+
+				out.write("DateTime+" +","+ "BatteryLevel(0-100)");  
+
+
+			}  
+		} catch (IOException e) {  
+			Log.e("ERROR:---", "Could not write file to SDCard" + e.getMessage());  
+		}  
+		/*
+		 * After 5 seconds, check every 5 seconds that accelerometer sensor is still
+		 * registered and spit out additional debugging info to the logs:
+		 */
+		checkAccelListenerTimer.schedule(checkAccelerometerListener, 5000, 5000);
+
+	}
+
+
+
+
+	//-----------------------------------------------------------------------------------------------------TIMERTASK-----------------
+	/**
+	 * Task invoked by a timer periodically to make sure the location listener is
+	 * still registered.
+	 */
+	private TimerTask checkAccelerometerListener = new TimerTask() {
+		@Override
+		public void run() {
+
+			// It's always safe to assume that if isRecording() is true, it implies
+			// that onCreate() has finished.
+
+			handler.post(new Runnable() {
+
+				public void run() {
+					
+					//back on system thread
+					if (isAccelActive == true) {
+
+						Log.d("Status", "Accelerometer is inactive");
+						// battery();
+						mSensorManager.unregisterListener(mGraphView);
+						
+						unregisterReceiver(batteryReceiver);
+						
+						isAccelActive=false;
+
+
+					}//end of if
+					else{
+
+						mSensorManager.registerListener(mGraphView,
+								mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
+								SensorManager.SENSOR_DELAY_FASTEST);
+						mSensorManager.registerListener(mGraphView,
+								mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD),
+								SensorManager.SENSOR_DELAY_FASTEST);
+						mSensorManager.registerListener(mGraphView, 
+								mSensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION),
+								SensorManager.SENSOR_DELAY_FASTEST);
+						Log.d("Satus", "Accelerometer is active");
+
+						IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+						registerReceiver(batteryReceiver, filter);
+
+						isAccelActive=true;
+
+					}//end if
+
+				}//end of internal run
+
+
+			}//end of handler runnable
+					);//close of handler runnable
+
+			/**File writing**/
+
+		}//end of run
+	};//end of timertask
+
+	//-----------------------------------------------------------------------------------------------------ALERTBOX-----------------
+	protected void alertbox(String title, String mymessage)  
+	{  
+		new AlertDialog.Builder(this)  
+		.setMessage(mymessage)  
+		.setTitle(title)
+		.setCancelable(true)  
+		.setNeutralButton(android.R.string.ok,  
+				new DialogInterface.OnClickListener() {  
+			public void onClick(DialogInterface dialog, int whichButton){
+				finish();
+			}  
+		})  
+		.show(); 
+	}
+
+	//-----------------------------------------------------------------------------------------------------onDESTROY-----------------
+	@Override
+	protected void onDestroy()
+	{
+		super.onDestroy();
+		checkAccelerometerListener.cancel();
+		checkAccelerometerListener = null;
+		checkAccelListenerTimer.cancel();
+		checkAccelListenerTimer.purge();
+		unregisterReceiver(batteryReceiver);
+		try {
+			out.flush();
 			out.close();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-    	
-    }
-    
-    //-----------------------------------------------------------------------------------------------------BATTERY-----------------
-    
-    
-    	
-    BroadcastReceiver batteryReceiver = new BroadcastReceiver() {
-       
-      
-        @Override
-        public void onReceive(Context context, Intent intent) {
-        	
-            level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);//BATTERY CHARGE
-            scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1);//SCALE OF FULL BATTERY CHARGE
-            temp = intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, -1);//BATTERY TEMPERATURE
-            voltage = intent.getIntExtra(BatteryManager.EXTRA_VOLTAGE, -1);//BATTERY VOLTAGE
-            Log.e("BatteryManager", "level is "+level+"/"+scale+", temp is "+temp+", voltage is "+voltage);     
-           
-            try {
-            	
-            	timestamp = new Date();
-            	csvFormattedDate = csvFormatter.format(timestamp);
-            	
-            	out.newLine();
- 	    		out.append(csvFormattedDate +","+ Integer.toString(level));
- 	    		
- 	    	} catch (IOException e) {
- 	    		// TODO Auto-generated catch block
- 	    		e.printStackTrace();
- 	    	}
-        }
-        
-    };
-    
-    
- 
 
-    
-  //----------------------------------------------------------------------------------------------------------------------------  
-    /**Unused methods**/
-    @Override
-    protected void onResume() {
-        super.onResume();
-        
-  
-        //Starts the sensor reading
-       
-        
-    }
-    
-    @Override
-    protected void onStop() {
-    	//turns off sensor
-       
-        super.onStop();
-    }
+	}
+
+	//-----------------------------------------------------------------------------------------------------------BATTERY-----------------
+
+
+
+	BroadcastReceiver batteryReceiver = new BroadcastReceiver() {
+
+
+		@Override
+		public void onReceive(Context context, Intent intent) {
+
+			level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);//BATTERY CHARGE
+			scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1);//SCALE OF FULL BATTERY CHARGE
+			temp = intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, -1);//BATTERY TEMPERATURE
+			voltage = intent.getIntExtra(BatteryManager.EXTRA_VOLTAGE, -1);//BATTERY VOLTAGE
+			Log.e("BatteryManager", "level is "+level+"/"+scale+", temp is "+temp+", voltage is "+voltage);     
+
+			try {
+
+				timestamp = new Date();
+				csvFormattedDate = csvFormatter.format(timestamp);
+
+				out.newLine();
+				out.append(csvFormattedDate +","+ Integer.toString(level));
+
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+
+	};
+
+	//----------------------------------------------------------------------------------------------------------------------------  
+	/**Unused methods**/
+	@Override
+	protected void onResume() {
+		super.onResume();
+
+
+		//Starts the sensor reading
+
+
+	}
+
+	@Override
+	protected void onStop() {
+		//turns off sensor
+
+		super.onStop();
+	}
 }
-    
-    
+
+
